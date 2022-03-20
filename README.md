@@ -1,0 +1,1 @@
+# cygwin-auto-get-instal
