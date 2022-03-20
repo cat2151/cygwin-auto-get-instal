@@ -126,7 +126,7 @@ buildHelloWorld() {
 
 createCygwin64Bat() {
   # cygwin64/../に、"cygwin.batを起動するbat" を生成する。msys2-auto-installと似たイメージで即席で使える用。
-  cat <<EOS | iconv -f UTF-8 -t CP932 | perl -pe 's/\n/\r\n/' > ${WD}../../../cygwin64.bat # 行末の \\ はbash仕様対応
+  cat <<EOS | iconv -f UTF-8 -t CP932 | perl -pe 's/\n/\r\n/' > ${WD}../../cygwin64.bat
 @echo off
 pushd cygwin64
 call cygwin.bat
