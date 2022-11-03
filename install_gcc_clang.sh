@@ -27,6 +27,7 @@ installAptCygSub() {
 
 # perl のインストール（cpanmのインストール用ほか）
 installPerl() {
+  apt-cyg install perl_base # 20221103現在、ないとperl.exeがinstallされなかった
   apt-cyg install perl
   perl --version
   if [ $? -ne 0 ]; then
