@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e    # エラーを検知する用
 set -x    # 何が実行されているかログでわかりやすくする用
 SECONDS=0 # 時間計測用
 
@@ -59,10 +60,84 @@ installCpanmSub() {
   cpanm --version
 }
 
+installGccDepends() {
+  # 各toolを動かすため、toolが依存しているパッケージを明示的にinstallする用。以前は不要だったが現在必須。詳しい情報は見つからなかった。
+
+  # mingw64-x86_64-gcc-core が依存しているもの : https://www.cygwin.com/packages/summary/mingw64-x86_64-gcc-core.html より
+  apt-cyg install bash
+  apt-cyg install cygwin
+  apt-cyg install libgmp10
+  apt-cyg install libiconv2
+  apt-cyg install libintl8
+  apt-cyg install libisl23
+  apt-cyg install libmpc3
+  apt-cyg install libmpfr6
+  apt-cyg install libzstd1
+  apt-cyg install mingw64-x86_64-binutils
+  apt-cyg install mingw64-x86_64-runtime
+  apt-cyg install mingw64-x86_64-windows-default-manifest
+  apt-cyg install mingw64-x86_64-winpthreads
+  apt-cyg install zlib0
+
+  # gdbが依存しているもの : https://cygwin.com/packages/summary/gdb.html より
+  apt-cyg install bash
+  apt-cyg install cygwin
+  apt-cyg install libexpat1
+  apt-cyg install libgcc1
+  apt-cyg install libgmp10
+  apt-cyg install libiconv
+  apt-cyg install libiconv2
+  apt-cyg install libintl8
+  apt-cyg install liblzma5
+  apt-cyg install libmpfr6
+  apt-cyg install libncursesw10
+  apt-cyg install libreadline7
+  apt-cyg install libsource-highlight4
+  apt-cyg install libstdc++6
+  apt-cyg install python39
+  apt-cyg install zlib0
+  # 公式pageには不足があり、cygcheck gdb で確認したところ、以下にも依存していた
+  apt-cyg install libboost_regex1.66
+  apt-cyg install libicu61
+
+  # makeが依存しているもの : https://cygwin.com/packages/summary/make.html より
+  apt-cyg install cygwin
+  apt-cyg install libguile2.2_1
+  apt-cyg install libintl8
+  # 公式pageには不足があり、cygcheck make で確認したところ、以下にも依存していた
+  apt-cyg install libgc1
+  apt-cyg install libltdl7
+
+  # cmakeが依存しているもの : https://cygwin.com/packages/summary/cmake.html より
+  apt-cyg install bash
+  apt-cyg install cygwin
+  apt-cyg install libarchive13
+  apt-cyg install libcurl4
+  apt-cyg install libexpat1
+  apt-cyg install libgcc1
+  apt-cyg install libjsoncpp25
+  apt-cyg install libncursesw10
+  apt-cyg install librhash0
+  apt-cyg install libstdc++6
+  apt-cyg install libuuid1
+  apt-cyg install libuv1
+  apt-cyg install zlib0
+  # 公式pageには不足があり、cygcheck cmake で確認したところ、以下にも依存していた
+  apt-cyg install liblzo2_2
+}
+
 installGccMingw() {
   apt-cyg install mingw64-x86_64-gcc-core
+  x86_64-w64-mingw32-gcc --version
+
   apt-cyg install gdb
-  apt-cyg install make # テストはしないが必須級なのでinstallする。なおMSYS2のほうは明示しなくてもinstallされていた
+  gdb --version
+
+  apt-cyg install make  # テストはしないが必須級なのでinstallする。なおMSYS2のほうは明示しなくてもinstallされていた
+  make --version
+
+  apt-cyg install cmake # make同様必須級なのでinstallする
+  cmake --version
 }
 
 installClangMingw() {
@@ -149,9 +224,10 @@ main() {
   installAptCyg
   installPerl
   installCpanm
+  installGccDepends
   installGccMingw
   installClangMingw
-  rebaseall -pv # exeを実行するとエラーになる問題の対策用（CygwinとWindowsの環境依存不具合）
+  rebaseall # exeを実行するとエラーになる問題の対策用（CygwinとWindowsの環境依存不具合）
   buildHelloWorld
   createCygwin64Bat
   addAliasToProfile

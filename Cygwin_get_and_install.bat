@@ -62,7 +62,11 @@ function installCygwin($exeFullpath) {
 # Cygwinに(mingw32の)gccとclangをインストールしてhello worldをコンパイルし、ログを得る
 function installGccClang() {
   $Env:WD="${cygwinInstDir}\cygwin64\bin\"
-  download_install_gcc_clang_sh $Env:WD
+  if ($isDevelopSh) {
+    cp_install_gcc_clang_sh       $Env:WD
+  } else {
+    download_install_gcc_clang_sh $Env:WD
+  }
 
   pushd $Env:WD
     rm_f install_gcc_clang.log # msys2-auto-installに寄せた
@@ -74,19 +78,29 @@ function installGccClang() {
 function download_install_gcc_clang_sh($Env:WD) {
   rm_f ${Env:WD}install_gcc_clang.sh
   curl.exe -L $url_install_gcc_clang_sh --output ${Env:WD}install_gcc_clang.sh
-  #cp ${scriptDir}\install_gcc_clang.sh ${Env:WD}install_gcc_clang.sh # sh開発用
+}
+function cp_install_gcc_clang_sh($Env:WD) {
+  cp ${scriptDir}\install_gcc_clang.sh ${Env:WD}install_gcc_clang.sh # sh開発用
 }
 
 function main() {
-  # 開発時はここと download_install_gcc_clang_sh内 それぞれを適宜コメントアウトして効率化する
-  $exeFullpath = downloadCygwinExe
-  #$exeFullpath = "${cygwinInstDir}\install\setup-x86_64.exe" # 開発用（以降を開発するとき用）
-  installCygwin $exeFullpath
+  if ($isSkipDownloadCygwinExe -or $isDevelopSh) {
+    $exeFullpath = "${cygwinInstDir}\install\setup-x86_64.exe"
+  } else {
+    $exeFullpath = downloadCygwinExe
+  }
+  if ($isDevelopSh) {
+  } else {
+    installCygwin $exeFullpath
+  }
   installGccClang
 }
 
 
 ###
+#$isSkipDownloadCygwinExe = $true # installCygwin開発用
+#$isDevelopSh             = $true # sh開発用
+
 $packageSite="https://ftp.iij.ad.jp/pub/cygwin/"
 $url_install_gcc_clang_sh = "https://raw.githubusercontent.com/cat2151/cygwin-auto-get-install/main/install_gcc_clang.sh"
 $scriptDir = getScriptDir
