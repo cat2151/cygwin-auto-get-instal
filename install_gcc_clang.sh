@@ -61,7 +61,11 @@ installCpanmSub() {
 }
 
 installGccDepends() {
-  # 各toolを動かすため、toolが依存しているパッケージを明示的にinstallする用。以前は不要だったが現在必須。詳しい情報は見つからなかった。
+  # 各toolを動かすため、toolが依存しているパッケージを明示的にinstallする用。以前はこのshを使う方式であっても自動的にinstallされていた。今はこのように明示的なinstallをしないとinstallされない。経緯は不明。
+
+  # 必須ヘッダを入手する用。gccやclangを使ってのコンパイルに必須。これに気づくには、ぐぐって基礎知識を得て、公式 setup-x86_64.exe のinstall listをみて automatically added されているものがあることを知る必要があった。
+  apt-cyg install cygwin-devel            # stdio.h  など
+  apt-cyg install mingw64-x86_64-headers  # stddef.h など
 
   # mingw64-x86_64-gcc-core が依存しているもの : https://www.cygwin.com/packages/summary/mingw64-x86_64-gcc-core.html より
   apt-cyg install bash
@@ -169,16 +173,13 @@ createSourceFile() { # 引数 : $cName, $cppName
   cppName=$2
   pushd /usr/bin
   cat <<EOS > $cName
-//#include <stdio.h> // stdio.hを要求されて落ちる
+#include <stdio.h>
 int main() { printf("hello, world C\n"); }
 EOS
 
   cat <<EOS > $cppName
-//#include <iostream> // wchar.hを要求されて落ちる
-//int main() { std::cout << "hello, world C++\n"; }
-//#include <cstdio> // stdio.hを要求されて落ちる
-//int main() { printf("hello, world C\n"); }
-int main() { return 0; }
+#include <iostream>
+int main() { std::cout << "hello, world C++\n"; }
 EOS
   popd
 }
@@ -207,10 +208,10 @@ buildHelloWorld() {
   pushd /usr/bin
     createSourceFile $cName $cppName
     # Cygwinのgcc/g++は、mingw32を使う。そうしないとDLL依存するexe（DLLのない場所で動かない）が出力されてしまう
-    build x86_64-w64-mingw32-gcc     $cName   ""
-    build x86_64-w64-mingw32-g++     $cppName "-static -lstdc++ -lgcc -lwinpthread"
-    build x86_64-w64-mingw32-clang   $cName   ""
-    build x86_64-w64-mingw32-clang++ $cppName "-static -lstdc++ -lgcc -lwinpthread"
+    build x86_64-w64-mingw32-gcc     $cName   "-v"
+    build x86_64-w64-mingw32-g++     $cppName "-v -static -lstdc++ -lgcc -lwinpthread"
+    build x86_64-w64-mingw32-clang   $cName   "-v"
+    build x86_64-w64-mingw32-clang++ $cppName "-v -static -lstdc++ -lgcc -lwinpthread"
     mv -f $cName $cppName $WD../../install # hello worldソースを cygwin64/../install に移動する
   popd
 }
