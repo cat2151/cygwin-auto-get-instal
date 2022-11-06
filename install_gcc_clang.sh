@@ -124,11 +124,24 @@ installGccDepends() {
   apt-cyg install zlib0
   # 公式pageには不足があり、cygcheck cmake で確認したところ、以下にも依存していた
   apt-cyg install liblzo2_2
+
+  # clangが依存しているもの : https://www.cygwin.com/packages/summary/mingw64-x86_64-clang.html より
+  apt-cyg install libclang8
+  apt-cyg install mingw64-x86_64-binutils
+  apt-cyg install mingw64-x86_64-gcc-core
+  apt-cyg install mingw64-x86_64-gcc-g++
+  apt-cyg install mingw64-x86_64-runtime
+  # 公式pageには不足があり、x86_64-w64-mingw32-clang の起動エラーメッセージで確認したところ、以下にも依存していた（cygcheck x86_64-w64-mingw32-clangはエラーとなった）
+  apt-cyg install libllvm8
+  apt-cyg install libpolly8
 }
 
 installGccMingw() {
   apt-cyg install mingw64-x86_64-gcc-core
   x86_64-w64-mingw32-gcc --version
+
+  apt-cyg install mingw64-x86_64-gcc-g++
+  x86_64-w64-mingw32-g++ --version
 
   apt-cyg install gdb
   gdb --version
@@ -142,6 +155,8 @@ installGccMingw() {
 
 installClangMingw() {
   apt-cyg install mingw64-x86_64-clang
+  x86_64-w64-mingw32-clang   --version
+  x86_64-w64-mingw32-clang++ --version
 }
 
 printSeconds() { # 引数 SECONDS
@@ -154,13 +169,16 @@ createSourceFile() { # 引数 : $cName, $cppName
   cppName=$2
   pushd /usr/bin
   cat <<EOS > $cName
-#include <stdio.h>
+//#include <stdio.h> // stdio.hを要求されて落ちる
 int main() { printf("hello, world C\n"); }
 EOS
 
   cat <<EOS > $cppName
-#include <iostream>
-int main() { std::cout << "hello, world C++\n"; }
+//#include <iostream> // wchar.hを要求されて落ちる
+//int main() { std::cout << "hello, world C++\n"; }
+//#include <cstdio> // stdio.hを要求されて落ちる
+//int main() { printf("hello, world C\n"); }
+int main() { return 0; }
 EOS
   popd
 }
@@ -183,21 +201,18 @@ build() { # 引数 : compiler, sourceName, option
 }
 
 buildHelloWorld() {
-  set +x # hello worldの実行結果をわかりやすくする用
   cName=hello_c.c
   cppName=hello_c++.cpp
 
   pushd /usr/bin
     createSourceFile $cName $cppName
-    # cygwinのgcc/g++は、mingw32を使う。そうしないとDLL依存するexe（DLLのない場所で動かない）が出力されてしまう
+    # Cygwinのgcc/g++は、mingw32を使う。そうしないとDLL依存するexe（DLLのない場所で動かない）が出力されてしまう
     build x86_64-w64-mingw32-gcc     $cName   ""
     build x86_64-w64-mingw32-g++     $cppName "-static -lstdc++ -lgcc -lwinpthread"
     build x86_64-w64-mingw32-clang   $cName   ""
     build x86_64-w64-mingw32-clang++ $cppName "-static -lstdc++ -lgcc -lwinpthread"
     mv -f $cName $cppName $WD../../install # hello worldソースを cygwin64/../install に移動する
   popd
-
-  set -x
 }
 
 createCygwin64Bat() {
